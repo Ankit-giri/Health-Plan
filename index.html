@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Health Plan</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2E7D52">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Health Plan">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F7F9F8; color: #1A2B22; }
+
+  .header {
+    background: linear-gradient(135deg, #2E7D52 0%, #4CAF7D 100%);
+    padding: 28px 20px 24px; color: #fff;
+  }
+  .header .label { font-size: 11px; font-weight: 700; letter-spacing: 2px; opacity: 0.8; margin-bottom: 4px; }
+  .header h1 { font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+  .header p { font-size: 13px; opacity: 0.85; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .tag-pill { background: rgba(255,255,255,0.2); font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+
+  .tabs { display: flex; overflow-x: auto; background: #fff; border-bottom: 2px solid #E8EEE9; padding: 0 12px; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn { border: none; background: none; padding: 12px 14px; font-size: 13px; font-weight: 600; color: #6B7F74; border-bottom: 2.5px solid transparent; cursor: pointer; white-space: nowrap; }
+  .tab-btn.active { color: #4CAF7D; border-bottom-color: #4CAF7D; }
+
+  .content { padding: 20px 16px; max-width: 600px; margin: 0 auto; }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  .section-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .section-sub { font-size: 13px; color: #6B7F74; margin-bottom: 20px; }
+
+  .card {
+    background: #fff; border-radius: 14px; padding: 16px 18px;
+    border: 1.5px solid #E8EEE9; margin-bottom: 12px;
+  }
+  .card-green { background: #E8F5EE; border-color: #4CAF7D; }
+  .card-yellow { background: #FEF3E2; border-color: #F4A324; }
+  .card-red { background: #FDEAEA; border-color: #E05555; }
+  .card-dark { background: #2E7D52; border-color: #2E7D52; color: #fff; }
+
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-right: 4px; }
+  .tag-green { background: #4CAF7D22; color: #4CAF7D; }
+  .tag-yellow { background: #F4A32422; color: #F4A324; }
+  .tag-purple { background: #9B59B622; color: #9B59B6; }
+  .tag-blinkit { background: #F59E0B22; color: #F59E0B; }
+  .tag-zepto { background: #8B5CF622; color: #8B5CF6; }
+  .tag-swiggy { background: #EF444422; color: #EF4444; }
+
+  /* Timeline */
+  .timeline-item { display: flex; gap: 12px; margin-bottom: 10px; }
+  .timeline-dot-wrap { display: flex; flex-direction: column; align-items: center; padding-top: 4px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot-line { width: 2px; flex: 1; min-height: 30px; margin-top: 2px; }
+  .tblock { border-radius: 10px; padding: 8px 12px; flex: 1; border: 1px solid; }
+  .tblock .ttime { font-size: 12px; font-weight: 700; }
+  .tblock .tactivity { font-size: 13px; font-weight: 600; margin-top: 1px; }
+  .tblock .tdetail { font-size: 12px; color: #6B7F74; margin-top: 3px; }
+  .t-wake { background: #E8F5EE; border-color: #4CAF7D; }
+  .t-wake .ttime { color: #4CAF7D; }
+  .dot-wake { background: #4CAF7D; }
+  .line-wake { background: #4CAF7D44; }
+  .t-meal { background: #FEF3E2; border-color: #F4A324; }
+  .t-meal .ttime { color: #F4A324; }
+  .dot-meal { background: #F4A324; }
+  .line-meal { background: #F4A32444; }
+  .t-sleep { background: #EEF0FF; border-color: #7B83EB; }
+  .t-sleep .ttime { color: #7B83EB; }
+  .dot-sleep { background: #7B83EB; }
+  .line-sleep { background: #7B83EB44; }
+  .t-normal { background: #F7F9F8; border-color: #D0DDD5; }
+  .t-normal .ttime { color: #6B7F74; }
+  .dot-normal { background: #6B7F74; }
+  .line-normal { background: #6B7F7444; }
+
+  /* Meal cards */
+  .meal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .meal-title { font-size: 15px; font-weight: 700; }
+  .meal-time { font-size: 12px; color: #6B7F74; margin-left: 8px; }
+  .meal-item { font-size: 13px; padding: 4px 0; border-bottom: 1px dashed #EDF1EE; }
+  .meal-item:last-child { border-bottom: none; }
+  .meal-item::before { content: "• "; color: #4CAF7D; }
+  .meal-note { margin-top: 8px; font-size: 12px; color: #F4A324; font-weight: 600; }
+
+  /* Supplement rows */
+  .supp-row { display: flex; justify-content: space-between; align-items: flex-start; }
+  .supp-name { font-size: 14px; font-weight: 700; }
+  .supp-why { font-size: 12px; color: #6B7F74; margin-top: 2px; }
+  .supp-detail { font-size: 12px; margin-top: 4px; }
+
+  /* Grocery accordion */
+  .accordion-btn {
+    width: 100%; background: #fff; border: 1.5px solid #E8EEE9; border-radius: 12px;
+    padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer; font-size: 14px; font-weight: 700; color: #1A2B22; margin-bottom: 4px;
+  }
+  .accordion-body {
+    background: #fff; border: 1.5px solid #E8EEE9; border-top: none;
+    border-radius: 0 0 12px 12px; padding: 0 16px 12px; display: none; margin-bottom: 8px;
+  }
+  .accordion-body.open { display: block; }
+  .grocery-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #EDF1EE; }
+  .grocery-row:last-child { border-bottom: none; }
+  .grocery-name { font-size: 13px; font-weight: 600; }
+  .grocery-sub { font-size: 11px; color: #6B7F74; }
+
+  /* Avoid */
+  .avoid-item { display: flex; gap: 10px; align-items: flex-start; }
+  .avoid-name { font-size: 14px; font-weight: 700; }
+  .avoid-reason { font-size: 12px; color: #6B7F74; margin-top: 3px; }
+
+  /* Table rows */
+  .trow { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #F0F4F1; }
+  .trow:last-child { border-bottom: none; }
+  .trow-label { font-size: 13px; color: #6B7F74; }
+  .trow-value { font-size: 13px; font-weight: 600; text-align: right; }
+  .trow-sub { font-size: 11px; color: #6B7F74; }
+
+  /* Sub section headers */
+  .sub-header { font-size: 14px; font-weight: 700; color: #6B7F74; margin: 16px 0 8px; }
+
+  /* Timeline summary */
+  .timeline-summary { display: flex; gap: 12px; margin-bottom: 8px; align-items: center; }
+  .ts-badge { background: rgba(255,255,255,0.2); border-radius: 8px; padding: 2px 8px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .ts-text { font-size: 13px; opacity: 0.9; }
+
+  .highlight-row { display: flex; gap: 16px; }
+  .highlight-box { text-align: center; }
+  .highlight-num { font-size: 22px; font-weight: 800; }
+  .highlight-label { font-size: 11px; color: #6B7F74; }
+
+  .replace-row { font-size: 13px; padding: 5px 0; border-bottom: 1px dashed #C8E6D6; }
+  .replace-bad { color: #E05555; }
+  .replace-good { color: #4CAF7D; }
+
+  .must-have-row { padding: 6px 0; border-bottom: 1px dashed #C8E6D6; }
+  .must-have-item { font-weight: 700; font-size: 13px; }
+  .must-have-desc { font-size: 12px; color: #6B7F74; margin-left: 6px; }
+
+  .good-list div { font-size: 13px; padding: 4px 0; border-bottom: 1px dashed #EDF1EE; }
+  .good-list div::before { content: "✓ "; color: #4CAF7D; }
+  .bad-list div { font-size: 13px; padding: 4px 0; }
+  .bad-list div::before { content: "✗ "; color: #E05555; }
+
+  .powershot-item { display: flex; justify-content: space-between; align-items: flex-start; }
+  .ps-name { font-size: 14px; font-weight: 700; }
+  .ps-why { font-size: 12px; color: #6B7F74; margin-top: 2px; }
+
+  @media (max-width: 400px) {
+    .header h1 { font-size: 22px; }
+    .content { padding: 16px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="label">NUTRITIONIST PLAN</div>
+  <h1>My Daily Health Plan 🌿</h1>
+  <p>Complete Reset — Sleep · Food · Gut · Supplements</p>
+  <div class="tags">
+    <span class="tag-pill">Veg + Egg only</span>
+    <span class="tag-pill">Gut healing</span>
+    <span class="tag-pill">Cold turkey reset</span>
+    <span class="tag-pill">10-min delivery</span>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab(0)">🕐 Schedule</button>
+  <button class="tab-btn" onclick="switchTab(1)">🥗 Meal Plan</button>
+  <button class="tab-btn" onclick="switchTab(2)">🌰 Powershot</button>
+  <button class="tab-btn" onclick="switchTab(3)">🛒 Shopping</button>
+  <button class="tab-btn" onclick="switchTab(4)">💊 Supplements</button>
+  <button class="tab-btn" onclick="switchTab(5)">⚠️ Avoid</button>
+</div>
+
+<div class="content">
+
+<!-- TAB 0: Schedule -->
+<div class="tab-pane active" id="tab-0">
+  <div class="section-title">Daily Schedule</div>
+  <div class="section-sub">Cold turkey — start from tomorrow itself</div>
+
+  <div class="card card-green" style="margin-bottom:16px">
+    <div style="font-size:13px;font-weight:700;color:#2E7D52;margin-bottom:10px">🎯 Target Times — Both</div>
+    <div class="highlight-row">
+      <div class="highlight-box">
+        <div class="highlight-num" style="color:#4CAF7D">6:30</div>
+        <div class="highlight-label">Wake Up</div>
+      </div>
+      <div class="highlight-box">
+        <div class="highlight-num" style="color:#F4A324">7:00</div>
+        <div class="highlight-label">Morning Routine</div>
+      </div>
+      <div class="highlight-box">
+        <div class="highlight-num" style="color:#7B83EB">11:00</div>
+        <div class="highlight-label">Lights Out</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-wake"></div><div class="dot-line line-wake"></div></div>
+    <div class="tblock t-wake"><div class="ttime">6:30 AM</div><div class="tactivity">Wake Up — Both</div><div class="tdetail">No phone for first 10 min. Open curtains, get sunlight.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-wake"></div><div class="dot-line line-wake"></div></div>
+    <div class="tblock t-wake"><div class="ttime">6:35 AM</div><div class="tactivity">2-3 glasses lukewarm water</div><div class="tdetail">Lemon squeeze + pinch of salt. Kick-starts digestion, reduces jalan.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-meal"></div><div class="dot-line line-meal"></div></div>
+    <div class="tblock t-meal"><div class="ttime">6:50 AM</div><div class="tactivity">🌰 Morning Powershot</div><div class="tdetail">Nuts + seeds + milk. See Powershot tab. 3 min to prepare.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-normal"></div><div class="dot-line line-normal"></div></div>
+    <div class="tblock t-normal"><div class="ttime">7:15 AM</div><div class="tactivity">Light stretch / walk</div><div class="tdetail">Even 10 min walk. Fixes leg aching (pair tatana) + circulation directly.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-meal"></div><div class="dot-line line-meal"></div></div>
+    <div class="tblock t-meal"><div class="ttime">8:00 AM</div><div class="tactivity">Breakfast</div><div class="tdetail">Quick — oats / eggs / poha. Never skip. See Meal Plan tab.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-normal"></div><div class="dot-line line-normal"></div></div>
+    <div class="tblock t-normal"><div class="ttime">8:30 AM</div><div class="tactivity">Work Starts</div><div class="tdetail">Office / WFH. Water bottle on desk — 3-4L target daily.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-meal"></div><div class="dot-line line-meal"></div></div>
+    <div class="tblock t-meal"><div class="ttime">10:30 AM</div><div class="tactivity">Mid-morning snack</div><div class="tdetail">1 fruit (banana / apple) + coconut water or plain water.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-meal"></div><div class="dot-line line-meal"></div></div>
+    <div class="tblock t-meal"><div class="ttime">1:00 PM</div><div class="tactivity">Lunch — Main Meal 🍛</div><div class="tdetail">Biggest meal. Dal + sabzi + roti + curd. Outside theek hai but choose wisely.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-meal"></div><div class="dot-line line-meal"></div></div>
+    <div class="tblock t-meal"><div class="ttime">4:00 PM</div><div class="tactivity">Evening snack</div><div class="tdetail">Roasted chana / makhana / fruit. NEVER chai on empty stomach.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-normal"></div><div class="dot-line line-normal"></div></div>
+    <div class="tblock t-normal"><div class="ttime">4:30 PM</div><div class="tactivity">☕ Chai — AFTER snack only</div><div class="tdetail">One cup. Green tea preferred. Never first thing in morning.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-meal"></div><div class="dot-line line-meal"></div></div>
+    <div class="tblock t-meal"><div class="ttime">7:30 PM</div><div class="tactivity">Dinner — Light 🌙</div><div class="tdetail">Khichdi / dal chawal / egg bhurji + sabzi. Done by 8pm max.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-normal"></div><div class="dot-line line-normal"></div></div>
+    <div class="tblock t-normal"><div class="ttime">8:00 PM</div><div class="tactivity">Post dinner walk</div><div class="tdetail">15 min slow walk. Kills gas, improves digestion, burns fat.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-normal"></div><div class="dot-line line-normal"></div></div>
+    <div class="tblock t-normal"><div class="ttime">9:30 PM</div><div class="tactivity">Isabgol + warm water</div><div class="tdetail">1 tsp isabgol in warm water. Best gut cleaner. Take daily.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-sleep"></div><div class="dot-line line-sleep"></div></div>
+    <div class="tblock t-sleep"><div class="ttime">10:00 PM</div><div class="tactivity">Wind down — No screens</div><div class="tdetail">Dim lights. Melatonin rises naturally. Read or talk.</div></div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-dot-wrap"><div class="dot dot-sleep"></div><div class="dot-line" style="background:transparent"></div></div>
+    <div class="tblock t-sleep"><div class="ttime">11:00 PM</div><div class="tactivity">😴 Sleep — Both</div><div class="tdetail">7.5 hours = natural wake at 6:30 AM.</div></div>
+  </div>
+
+  <div class="card card-yellow" style="margin-top:8px">
+    <div style="font-size:13px;font-weight:700;color:#F4A324">⚡ First 3 Days Will Be Hard</div>
+    <div style="font-size:13px;margin-top:6px;line-height:1.6">Alarm full volume, doosre room mein rakho. Day 4 se body adjust ho jaata hai. <b>Daytime nap mat lo</b> — push through karni hai.</div>
+  </div>
+</div>
+
+<!-- TAB 1: Meal Plan -->
+<div class="tab-pane" id="tab-1">
+  <div class="section-title">Meal Plan</div>
+  <div class="section-sub">Veg + Egg only | Gut-friendly | Gas se bachne wala</div>
+
+  <div class="card card-green">
+    <div style="font-size:13px;font-weight:600;color:#2E7D52">💡 Rule: Ghar ka = Breakfast + Dinner. Lunch outside theek hai — but choose smart.</div>
+  </div>
+
+  <div class="sub-header">🌅 BREAKFAST OPTIONS (Quick — rotate daily)</div>
+
+  <div class="card">
+    <div class="meal-header"><div><span class="meal-title">Option A — Egg Bhurji</span><span class="meal-time">8:00 AM</span></div><span class="tag tag-green">⚡ Quick</span></div>
+    <div class="meal-item">2 eggs scrambled with onion + tomato + minimal oil</div>
+    <div class="meal-item">2 whole wheat roti or 1 multigrain bread slice</div>
+    <div class="meal-item">1 glass milk or black coffee (after eating, not before)</div>
+    <div class="meal-note">💡 Ready in 8 min. High protein. Best for weekdays.</div>
+  </div>
+
+  <div class="card">
+    <div class="meal-header"><div><span class="meal-title">Option B — Overnight Oats</span><span class="meal-time">8:00 AM</span></div><span class="tag tag-green">⚡ Quick</span></div>
+    <div class="meal-item">Rolled oats soaked overnight in milk (prepare night before)</div>
+    <div class="meal-item">Banana slices + 1 tsp honey + chia seeds on top</div>
+    <div class="meal-item">No cooking needed in morning at all</div>
+    <div class="meal-note">💡 Literally 0 effort in morning. Prepare in 2 min night before.</div>
+  </div>
+
+  <div class="card">
+    <div class="meal-header"><div><span class="meal-title">Option C — Poha + Egg</span><span class="meal-time">8:00 AM</span></div><span class="tag tag-green">⚡ Quick</span></div>
+    <div class="meal-item">Poha with veggies (20 min cook)</div>
+    <div class="meal-item">1 boiled egg on the side</div>
+    <div class="meal-item">Coconut water or plain water</div>
+    <div class="meal-note">💡 Lightest on stomach. Best if gas/acidity is bad that day.</div>
+  </div>
+
+  <div class="card">
+    <div class="meal-header"><div><span class="meal-title">Option D — Moong Dal Chilla</span><span class="meal-time">Weekend</span></div></div>
+    <div class="meal-item">Moong dal chilla (batter ready previous night)</div>
+    <div class="meal-item">Stuff with paneer or veggies</div>
+    <div class="meal-item">Green chutney on side</div>
+    <div class="meal-note">💡 Weekend special — 25 min. High protein, gut friendly.</div>
+  </div>
+
+  <div class="sub-header">☀️ LUNCH (Outside — Choose Smart)</div>
+
+  <div class="card">
+    <div style="font-size:13px;font-weight:700;color:#4CAF7D;margin-bottom:8px">✅ Order These Outside</div>
+    <div class="good-list">
+      <div>Dal tadka + jeera rice + salad</div>
+      <div>Rajma chawal (from trusted place)</div>
+      <div>Curd rice + sabzi</div>
+      <div>Egg curry + roti (no butter naan)</div>
+      <div>South Indian — idli / dosa / sambhar</div>
+    </div>
+  </div>
+
+  <div class="card card-red">
+    <div style="font-size:13px;font-weight:700;color:#E05555;margin-bottom:8px">❌ Avoid at Lunch</div>
+    <div class="bad-list">
+      <div>Pizza / burger / maida sandwich</div>
+      <div>Butter chicken / paneer butter masala daily</div>
+      <div>Cold drinks with meal</div>
+      <div>Biryani with heavy oil (occasionally ok)</div>
+    </div>
+  </div>
+
+  <div class="sub-header">🌙 DINNER (Light — Ghar ka, Done by 8pm)</div>
+
+  <div class="card">
+    <div class="meal-header"><div><span class="meal-title">Option A — Dal Khichdi</span><span class="meal-time">7:30 PM</span></div></div>
+    <div class="meal-item">Moong dal + rice khichdi with ghee</div>
+    <div class="meal-item">Cucumber raita or plain curd</div>
+    <div class="meal-note">💡 Best for gut healing. Zero gas. Pressure cooker — 20 min.</div>
+  </div>
+
+  <div class="card">
+    <div class="meal-header"><div><span class="meal-title">Option B — Egg Bhurji + Roti</span><span class="meal-time">7:30 PM</span></div><span class="tag tag-green">⚡ Quick</span></div>
+    <div class="meal-item">2 eggs scrambled, minimal oil</div>
+    <div class="meal-item">2 whole wheat roti + salad</div>
+  </div>
+
+  <div class="card">
+    <div class="meal-header"><div><span class="meal-title">Option C — Vegetable Daliya</span><span class="meal-time">7:30 PM</span></div></div>
+    <div class="meal-item">Broken wheat daliya with veggies</div>
+    <div class="meal-item">Curd on side</div>
+    <div class="meal-note">💡 High fiber — fixes constipation + gas over time.</div>
+  </div>
+
+  <div class="card">
+    <div class="meal-header"><div><span class="meal-title">Option D — Paneer Sabzi + Roti</span><span class="meal-time">7:30 PM</span></div></div>
+    <div class="meal-item">Simple paneer sabzi, minimal oil</div>
+    <div class="meal-item">2 roti + curd. Protein + calcium boost.</div>
+  </div>
+
+  <div class="card card-green" style="margin-top:8px">
+    <div style="font-size:13px;font-weight:700;color:#2E7D52;margin-bottom:8px">🥗 Daily Must-Haves</div>
+    <div class="must-have-row"><span class="must-have-item">Curd/Dahi</span><span class="must-have-desc">1 bowl daily — probiotic, heals gut, reduces gas</span></div>
+    <div class="must-have-row"><span class="must-have-item">Salad</span><span class="must-have-desc">Cucumber + tomato + lemon — every lunch</span></div>
+    <div class="must-have-row"><span class="must-have-item">Water</span><span class="must-have-desc">3-4L daily — phone reminder every 2 hrs</span></div>
+    <div class="must-have-row" style="border:none"><span class="must-have-item">Saunf</span><span class="must-have-desc">Chew 1 tsp after every outside meal — instant gas fix</span></div>
+  </div>
+</div>
+
+<!-- TAB 2: Powershot -->
+<div class="tab-pane" id="tab-2">
+  <div class="section-title">🌰 Morning Powershot</div>
+  <div class="section-sub">Paramveer style — daily morning ritual</div>
+
+  <div class="card card-green">
+    <div style="font-size:13px;color:#2E7D52;font-weight:600;line-height:1.6">Ye cheez both of us ke liye <b>game changer</b> hogi. Nuts + seeds daily = magnesium, zinc, omega-3, vitamin E — sab kuch jo tum deficient ho. Leg aching, weakness, irritability — sab 3-4 weeks mein improve hoga.</div>
+  </div>
+
+  <div class="sub-header">🌙 Soak These (Night Before)</div>
+
+  <div class="card">
+    <div class="powershot-item"><div><div class="ps-name">Almonds</div><div class="ps-why">Vitamin E, magnesium, protein</div></div><span class="tag tag-green">8-10 pcs</span></div>
+  </div>
+  <div class="card">
+    <div class="powershot-item"><div><div class="ps-name">Walnuts</div><div class="ps-why">Omega-3, brain health, reduces inflammation + body pain</div></div><span class="tag tag-green">4-5 halves</span></div>
+  </div>
+  <div class="card">
+    <div class="powershot-item"><div><div class="ps-name">Cashews</div><div class="ps-why">Zinc, iron — especially great for women</div></div><span class="tag tag-green">4-5 pcs</span></div>
+  </div>
+
+  <div class="sub-header">🌱 Add Dry (No Soaking)</div>
+
+  <div class="card">
+    <div class="powershot-item"><div><div class="ps-name">Pumpkin Seeds</div><div class="ps-why">Best magnesium source — directly fixes pair tatana (leg aching)</div></div><span class="tag tag-yellow">1 tsp</span></div>
+  </div>
+  <div class="card">
+    <div class="powershot-item"><div><div class="ps-name">Sunflower Seeds</div><div class="ps-why">Vitamin E, selenium, healthy fats</div></div><span class="tag tag-yellow">1 tsp</span></div>
+  </div>
+  <div class="card">
+    <div class="powershot-item"><div><div class="ps-name">Flaxseeds (ground)</div><div class="ps-why">Omega-3, fiber — fixes constipation + gas</div></div><span class="tag tag-yellow">1 tsp</span></div>
+  </div>
+  <div class="card">
+    <div class="powershot-item"><div><div class="ps-name">Chia Seeds</div><div class="ps-why">Hydration, fiber, calcium</div></div><span class="tag tag-yellow">1 tsp</span></div>
+  </div>
+
+  <div class="sub-header">🥛 How to Consume</div>
+
+  <div class="card card-yellow">
+    <div style="font-size:13px;line-height:1.8">
+      <b>Option A (Paramveer style):</b> Soaked nuts seedha khao + seeds upar se + 1 glass warm milk with 1 tsp honey. 3 min lagta hai.<br><br>
+      <b>Option B (Smoothie):</b> Blend everything with 1 glass milk + 1 banana. Filling, no chewing needed.<br><br>
+      <b>Option C (Dry):</b> Nuts + seeds as is. Chase with warm milk separately.
+    </div>
+  </div>
+
+  <div class="card card-green">
+    <div style="font-size:13px;font-weight:700;color:#2E7D52;margin-bottom:6px">⏰ Timing Rule</div>
+    <div style="font-size:13px">Powershot = <b>first thing after waking</b>, even before breakfast. Empty stomach absorption is best. 6:50-7:00 AM.</div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px">📦 Monthly Stock (Both of you)</div>
+    <div class="trow"><span class="trow-label">Almonds 500g</span><span class="trow-value">~₹350-400<br><span class="trow-sub">Blinkit</span></span></div>
+    <div class="trow"><span class="trow-label">Walnuts 200g</span><span class="trow-value">~₹250-300<br><span class="trow-sub">Blinkit</span></span></div>
+    <div class="trow"><span class="trow-label">Cashews 200g</span><span class="trow-value">~₹180-200<br><span class="trow-sub">Blinkit</span></span></div>
+    <div class="trow"><span class="trow-label">Pumpkin Seeds 250g</span><span class="trow-value">~₹130-150<br><span class="trow-sub">Zepto</span></span></div>
+    <div class="trow"><span class="trow-label">Sunflower Seeds 250g</span><span class="trow-value">~₹80<br><span class="trow-sub">Zepto</span></span></div>
+    <div class="trow"><span class="trow-label">Flaxseeds 250g</span><span class="trow-value">~₹60<br><span class="trow-sub">Blinkit</span></span></div>
+    <div class="trow"><span class="trow-label">Chia Seeds 200g</span><span class="trow-value">~₹100-120<br><span class="trow-sub">Zepto</span></span></div>
+    <div style="margin-top:8px;font-size:13px;font-weight:700;color:#4CAF7D">Total: ~₹1,150-1,300/month ✅</div>
+  </div>
+</div>
+
+<!-- TAB 3: Shopping -->
+<div class="tab-pane" id="tab-3">
+  <div class="section-title">🛒 Weekly Shopping</div>
+  <div class="section-sub">Daily fresh delivery via Zepto/Blinkit/Swiggy Instamart</div>
+
+  <div class="card card-green" style="margin-bottom:16px">
+    <div style="font-size:13px;color:#2E7D52;font-weight:600">💡 Strategy: Nuts/pantry = monthly bulk on Blinkit. Veggies + fruits + dairy = every 1-2 days on Zepto (10 min). Never let bananas + dahi run out.</div>
+  </div>
+
+  <button class="accordion-btn" onclick="toggleAccordion(this)">🥛 Dairy & Protein <span>▼</span></button>
+  <div class="accordion-body">
+    <div class="grocery-row"><div><div class="grocery-name">Dahi (curd)</div><div class="grocery-sub">500g tub · Every 2 days</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Eggs</div><div class="grocery-sub">12 pack · Weekly</div></div><span class="tag tag-zepto">Zepto</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Paneer</div><div class="grocery-sub">200g · 2x week</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Milk (full fat)</div><div class="grocery-sub">1L · Daily / Alt day</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+  </div>
+
+  <button class="accordion-btn" onclick="toggleAccordion(this)">🥦 Vegetables <span>▼</span></button>
+  <div class="accordion-body">
+    <div class="grocery-row"><div><div class="grocery-name">Spinach / Palak</div><div class="grocery-sub">250g · Every 2 days</div></div><span class="tag tag-zepto">Zepto</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Tomatoes</div><div class="grocery-sub">500g · Every 2 days</div></div><span class="tag tag-zepto">Zepto</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Cucumber</div><div class="grocery-sub">4 pcs · Every 2 days</div></div><span class="tag tag-zepto">Zepto</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Bottle Gourd / Lauki</div><div class="grocery-sub">1 kg · Weekly</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Carrots</div><div class="grocery-sub">500g · Weekly</div></div><span class="tag tag-zepto">Zepto</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Onion, Garlic, Ginger</div><div class="grocery-sub">Bulk · Weekly</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+  </div>
+
+  <button class="accordion-btn" onclick="toggleAccordion(this)">🍌 Fruits <span>▼</span></button>
+  <div class="accordion-body">
+    <div class="grocery-row"><div><div class="grocery-name">Bananas</div><div class="grocery-sub">6 pcs · Every 2 days — never run out!</div></div><span class="tag tag-zepto">Zepto</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Apples</div><div class="grocery-sub">4 pcs · Weekly</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Seasonal fruit</div><div class="grocery-sub">500g · Weekly</div></div><span class="tag tag-swiggy">Swiggy</span></div>
+  </div>
+
+  <button class="accordion-btn" onclick="toggleAccordion(this)">🌰 Nuts & Seeds (Powershot) <span>▼</span></button>
+  <div class="accordion-body">
+    <div class="grocery-row"><div><div class="grocery-name">Almonds</div><div class="grocery-sub">500g · Monthly stock</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Walnuts</div><div class="grocery-sub">200g · Monthly</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Cashews</div><div class="grocery-sub">200g · Monthly</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Pumpkin Seeds</div><div class="grocery-sub">250g · Monthly</div></div><span class="tag tag-zepto">Zepto</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Sunflower Seeds</div><div class="grocery-sub">250g · Monthly</div></div><span class="tag tag-zepto">Zepto</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Flaxseeds</div><div class="grocery-sub">250g · Monthly</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Chia Seeds</div><div class="grocery-sub">200g · Monthly</div></div><span class="tag tag-zepto">Zepto</span></div>
+  </div>
+
+  <button class="accordion-btn" onclick="toggleAccordion(this)">🫙 Pantry Basics <span>▼</span></button>
+  <div class="accordion-body">
+    <div class="grocery-row"><div><div class="grocery-name">Isabgol (Sat Isabgol)</div><div class="grocery-sub">200g · Monthly</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Saunf (fennel seeds)</div><div class="grocery-sub">100g · Monthly</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Ajwain</div><div class="grocery-sub">100g · Monthly</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Rolled Oats</div><div class="grocery-sub">1kg · Monthly</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Honey</div><div class="grocery-sub">500g · Monthly</div></div><span class="tag tag-blinkit">Blinkit</span></div>
+    <div class="grocery-row"><div><div class="grocery-name">Coconut water (tetra pack)</div><div class="grocery-sub">6 pcs · Weekly</div></div><span class="tag tag-zepto">Zepto</span></div>
+  </div>
+</div>
+
+<!-- TAB 4: Supplements -->
+<div class="tab-pane" id="tab-4">
+  <div class="section-title">💊 Supplements</div>
+  <div class="section-sub">Blood test pehle — B12, Vit D, CBC, Ferritin (~₹800 Thyrocare)</div>
+
+  <div class="card card-yellow">
+    <div style="font-size:13px;font-weight:700;color:#F4A324">⚠️ Blood Test First</div>
+    <div style="font-size:13px;margin-top:4px">Thyrocare / Redcliffe: B12 + Vitamin D + CBC + Iron (Ferritin). ~₹800-1200. Meanwhile D3 + B12 safe to start — no test needed for these.</div>
+  </div>
+
+  <div class="sub-header">💊 Start Immediately</div>
+
+  <div class="card">
+    <div class="supp-row"><div><div class="supp-name">Vitamin D3 + K2</div><div class="supp-why">Weakness, body pain, fat gain. Desk job = zero sunlight.</div><div class="supp-detail"><b>Dose:</b> 60,000 IU once a week &nbsp;|&nbsp; <b>When:</b> Sunday morning with fatty food</div><div style="font-size:11px;color:#6B7F74;margin-top:3px">Brand: Sun Pharma D-Rise sachet</div></div><span class="tag tag-green">Both</span></div>
+  </div>
+
+  <div class="card">
+    <div class="supp-row"><div><div class="supp-name">Vitamin B12</div><div class="supp-why">Fatigue, weakness, irritability. Common deficiency in 20s.</div><div class="supp-detail"><b>Dose:</b> 500-1000 mcg daily &nbsp;|&nbsp; <b>When:</b> Morning with breakfast</div><div style="font-size:11px;color:#6B7F74;margin-top:3px">Brand: Neurobion Forte or standalone B12</div></div><span class="tag tag-green">Both</span></div>
+  </div>
+
+  <div class="card">
+    <div class="supp-row"><div><div class="supp-name">Magnesium Glycinate</div><div class="supp-why">Leg aching (pair tatana), sleep quality, irritability, cramps.</div><div class="supp-detail"><b>Dose:</b> 300-400 mg daily &nbsp;|&nbsp; <b>When:</b> Night before sleep</div><div style="font-size:11px;color:#6B7F74;margin-top:3px">Brand: HealthKart / Now Foods</div></div><span class="tag tag-green">Both</span></div>
+  </div>
+
+  <div class="sub-header">💊 After Blood Test Confirms</div>
+
+  <div class="card">
+    <div class="supp-row"><div><div class="supp-name">Iron + Folic Acid</div><div class="supp-why">Weakness + irritability in women = often iron. Confirm first.</div><div class="supp-detail"><b>Dose:</b> 1 tab daily &nbsp;|&nbsp; <b>When:</b> After lunch</div><div style="font-size:11px;color:#6B7F74;margin-top:3px">Brand: Livogen / Dexorange</div></div><span class="tag tag-purple">Women</span></div>
+  </div>
+
+  <div class="sub-header">🌿 Gut Supplements (Start Now)</div>
+
+  <div class="card">
+    <div class="supp-row"><div><div class="supp-name">Probiotic</div><div class="supp-why">Rebuild gut bacteria. Gas + jalan 2-3 weeks mein reduce hoga.</div><div class="supp-detail"><b>Dose:</b> 1 capsule daily &nbsp;|&nbsp; <b>When:</b> Morning with breakfast</div><div style="font-size:11px;color:#6B7F74;margin-top:3px">Brand: Vizylac / Econorm</div></div><span class="tag tag-green">Both</span></div>
+  </div>
+
+  <div class="card">
+    <div class="supp-row"><div><div class="supp-name">Isabgol (Psyllium Husk)</div><div class="supp-why">Gut cleaner, reduces gas, fixes digestion. 100% natural.</div><div class="supp-detail"><b>Dose:</b> 1 tsp warm water &nbsp;|&nbsp; <b>When:</b> Every night before sleep</div><div style="font-size:11px;color:#6B7F74;margin-top:3px">Brand: Sat Isabgol (available everywhere)</div></div><span class="tag tag-green">Both</span></div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px">💰 Monthly Cost (Both)</div>
+    <div class="trow"><span class="trow-label">D3 + K2 (D-Rise sachets)</span><span class="trow-value">~₹200</span></div>
+    <div class="trow"><span class="trow-label">B12 (Neurobion Forte)</span><span class="trow-value">~₹100-150</span></div>
+    <div class="trow"><span class="trow-label">Magnesium Glycinate</span><span class="trow-value">~₹400-600</span></div>
+    <div class="trow"><span class="trow-label">Probiotic (Vizylac)</span><span class="trow-value">~₹200</span></div>
+    <div class="trow"><span class="trow-label">Isabgol (Sat Isabgol)</span><span class="trow-value">~₹60</span></div>
+    <div style="margin-top:8px;font-size:13px;font-weight:700;color:#4CAF7D">Total: ~₹960-1,200/month ✅</div>
+  </div>
+</div>
+
+<!-- TAB 5: Avoid -->
+<div class="tab-pane" id="tab-5">
+  <div class="section-title">⚠️ Things to Avoid</div>
+  <div class="section-sub">Ye karo toh supplements bhi kaam nahi karenge</div>
+
+  <div class="card card-red">
+    <div class="avoid-item"><span style="font-size:18px">🚫</span><div><div class="avoid-name">Tea / Coffee on empty stomach</div><div class="avoid-reason">Direct acid = jalan + acidity worsens immediately</div></div></div>
+  </div>
+  <div class="card card-red">
+    <div class="avoid-item"><span style="font-size:18px">🚫</span><div><div class="avoid-name">Maida items (pizza, burger, naan)</div><div class="avoid-reason">Ferments in gut → gas, bloating, fat gain — daily worst offender</div></div></div>
+  </div>
+  <div class="card card-red">
+    <div class="avoid-item"><span style="font-size:18px">🚫</span><div><div class="avoid-name">Cold drinks / soda</div><div class="avoid-reason">CO2 + acid = double gas + bloating. Switch to coconut water.</div></div></div>
+  </div>
+  <div class="card card-red">
+    <div class="avoid-item"><span style="font-size:18px">🚫</span><div><div class="avoid-name">Deep fried outside food daily</div><div class="avoid-reason">Slows digestion, acid reflux, fat gain — max 2x week</div></div></div>
+  </div>
+  <div class="card card-red">
+    <div class="avoid-item"><span style="font-size:18px">🚫</span><div><div class="avoid-name">Skipping breakfast</div><div class="avoid-reason">Empty stomach acid → jalan gets progressively worse</div></div></div>
+  </div>
+  <div class="card card-yellow">
+    <div class="avoid-item"><span style="font-size:18px">⚠️</span><div><div class="avoid-name">Late night heavy meals (after 9pm)</div><div class="avoid-reason">Digestion slows at night → fat gain + gas + poor sleep</div></div></div>
+  </div>
+  <div class="card card-yellow">
+    <div class="avoid-item"><span style="font-size:18px">⚠️</span><div><div class="avoid-name">Packaged chips / biscuits</div><div class="avoid-reason">Trans fat, excess salt = inflammation + water retention</div></div></div>
+  </div>
+  <div class="card card-yellow">
+    <div class="avoid-item"><span style="font-size:18px">⚠️</span><div><div class="avoid-name">Sleep after midnight regularly</div><div class="avoid-reason">Cortisol spikes → fat gain, irritability, weakness stays</div></div></div>
+  </div>
+
+  <div class="card card-green" style="margin-top:8px">
+    <div style="font-size:13px;font-weight:700;color:#2E7D52;margin-bottom:8px">✅ Replace With</div>
+    <div class="replace-row"><span class="replace-bad">✗ Empty stomach chai</span> <span class="replace-good">→ Lukewarm water + lemon</span></div>
+    <div class="replace-row"><span class="replace-bad">✗ Cold drink</span> <span class="replace-good">→ Coconut water / nimbu paani</span></div>
+    <div class="replace-row"><span class="replace-bad">✗ Maida snack</span> <span class="replace-good">→ Roasted chana / makhana / fruit</span></div>
+    <div class="replace-row"><span class="replace-bad">✗ Late heavy dinner</span> <span class="replace-good">→ Light dinner by 8pm</span></div>
+    <div class="replace-row" style="border:none"><span class="replace-bad">✗ Skipping meals</span> <span class="replace-good">→ Always carry banana as backup</span></div>
+  </div>
+
+  <div class="card card-yellow">
+    <div style="font-size:13px;font-weight:700;color:#F4A324">🧪 Rule Out — H. Pylori</div>
+    <div style="font-size:13px;margin-top:6px;line-height:1.6">Agar jalan <b>daily</b> ho raha hai toh H. Pylori infection possible hai. Bahar ka frequent khana = common cause. Simple stool test — ₹500-800 at Thyrocare. Positive hai toh doctor se 14-day antibiotic course. Supplements se nahi jayega.</div>
+  </div>
+</div>
+
+<!-- Progress Timeline (always visible) -->
+<div class="card card-dark" style="margin-top:24px">
+  <div style="font-size:14px;font-weight:800;margin-bottom:12px">📅 Progress Timeline</div>
+  <div class="timeline-summary"><span class="ts-badge">Week 1</span><span class="ts-text">Leg aching reduces, energy slightly better</span></div>
+  <div class="timeline-summary"><span class="ts-badge">Week 2-3</span><span class="ts-text">Gas + jalan noticeably better with gut supplements</span></div>
+  <div class="timeline-summary"><span class="ts-badge">Month 1</span><span class="ts-text">Sleep quality improved, irritability reducing</span></div>
+  <div class="timeline-summary"><span class="ts-badge">Month 2</span><span class="ts-text">Weight starts shifting, weakness gone</span></div>
+  <div class="timeline-summary"><span class="ts-badge">Month 3</span><span class="ts-text">Full reset — body feels like 22 again 💪</span></div>
+</div>
+
+<div style="height:32px"></div>
+</div>
+
+<script>
+function switchTab(index) {
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === index);
+  });
+  document.querySelectorAll('.tab-pane').forEach((pane, i) => {
+    pane.classList.toggle('active', i === index);
+  });
+}
+
+function toggleAccordion(btn) {
+  const body = btn.nextElementSibling;
+  const arrow = btn.querySelector('span');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  arrow.textContent = isOpen ? '▼' : '▲';
+  if (!isOpen) {
+    btn.style.borderRadius = '12px 12px 0 0';
+    btn.style.borderBottom = 'none';
+  } else {
+    btn.style.borderRadius = '12px';
+    btn.style.borderBottom = '';
+  }
+}
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
